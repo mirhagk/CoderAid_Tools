@@ -26,3 +26,5 @@ The next uses the password_verify to log in.
     {
         //the password was incorrect display error saying invalid username or password
     }
+
+Note when using `password_hash` you should use `PASSWORD_DEFAULT` which will update over time as more secure hashing methods become available. The method returns a string including the salt and the algorithm used, so the `password_verify` method can figure out which algorithm to use without a problem.
