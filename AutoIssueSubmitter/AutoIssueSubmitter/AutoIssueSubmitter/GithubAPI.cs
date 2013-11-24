@@ -10,26 +10,53 @@ namespace AutoIssueSubmitter
 {
     public static class GithubAPI
     {
-        private static void GetObjectFromURL<T>(string url)
+        public class Repository
+        {
+
+        }
+        private static T GetObjectFromURL<T>(string url)
         {
             var data = GetDataFromURL(url);
+            return JsonConvert.DeserializeObject<T>(data);
         }
-        public static string GitAPIURL(string apiPath, object parameters=null)
+        public static string GitAPIURL(string apiPath, object parameters = null)
         {
-            var query = System.Web.HttpUtility.ParseQueryString(String.Empty);
-            foreach (var param in parameters.GetType().GetProperties())
-            {
-                query.Add(param.Name, param.GetValue(parameters).ToString());
-            }
-            string queryVal = query.ToString();
+            string queryVal = ObjectToQuery(parameters ?? new object());
             string url = "https://api.github.com" + apiPath + (String.IsNullOrWhiteSpace(queryVal) ? "" : ("?" + queryVal));
             return url;
         }
+        private static string ObjectToQuery(object parameters)
+        {
+            var query = System.Web.HttpUtility.ParseQueryString(String.Empty);
+            if (parameters != null)
+                foreach (var param in parameters.GetType().GetProperties())
+                {
+                    query.Add(param.Name, param.GetValue(parameters).ToString());
+                }
+            return query.ToString();
+        }
+        private static void SearchQuery(string searchWords)
+        {
+            //https://github.com/search?q=css+background-colour&type=Code&ref=searchresults
+            var url = "https://github.com/search?" +
+                ObjectToQuery(new
+                {
+                    q = searchWords,
+                    type = "Code"
+                });
+            Console.WriteLine(GetDataFromURL(url));
+        }
         public static void Test()
         {
-            Console.WriteLine(GetDataFromURL(GitAPIURL("/search/repositories", 
-                new {q= "mysql $_GET"}
-                )));
+            //Console.WriteLine(GetDataFromURL(GitAPIURL("/search/code", 
+            //new {q= "mysql $_GET"}
+            //)));
+            SearchQuery("css+background-color");
+            Console.WriteLine("Done");
+        }
+        private static T Request<T>(string apiPath, object parameters = null)
+        {
+            return GetObjectFromURL<T>(GitAPIURL(apiPath, parameters));
         }
         private static string GetDataFromURL(string url)
         {
