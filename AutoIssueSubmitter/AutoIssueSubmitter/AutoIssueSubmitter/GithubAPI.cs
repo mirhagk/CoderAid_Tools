@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net;
+using CsQuery;
 
 namespace AutoIssueSubmitter
 {
@@ -42,16 +43,22 @@ namespace AutoIssueSubmitter
                 ObjectToQuery(new
                 {
                     q = searchWords,
-                    type = "Code"
+                    type = "Code",
+                    o = "desc",
+                    s = "indexed"
                 });
-            Console.WriteLine(GetDataFromURL(url));
+            var data = GetDataFromURL(url);
+            CQ cq = data;
+            var thing = cq[".code-list-item"].ToList();
+            Console.WriteLine(thing.First().InnerHTML);
+            //Console.WriteLine(cq[".code-list-item"].Skip(1).First().InnerHTML);
         }
         public static void Test()
         {
             //Console.WriteLine(GetDataFromURL(GitAPIURL("/search/code", 
             //new {q= "mysql $_GET"}
             //)));
-            SearchQuery("css+background-color");
+            SearchQuery("mysql_query $_POST");
             Console.WriteLine("Done");
         }
         private static T Request<T>(string apiPath, object parameters = null)
