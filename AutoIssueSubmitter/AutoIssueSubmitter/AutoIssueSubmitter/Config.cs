@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 
 namespace AutoIssueSubmitter
 {
-    [Serializable]
     class Config
     {
         public class Credentials
@@ -22,7 +21,9 @@ namespace AutoIssueSubmitter
         }
         public static Config LoadConfig(string filename)
         {
-            return JsonConvert.DeserializeObject<Config>(System.IO.File.ReadAllText(filename));
+            var config = JsonConvert.DeserializeObject<Config>(System.IO.File.ReadAllText(filename));
+            config.BlacklistRegex = config.Blacklist.Select((x) => new System.Text.RegularExpressions.Regex(x)).ToArray();
+            return config;
         }
         public System.Net.NetworkCredential NetworkCredential
         {
@@ -31,6 +32,9 @@ namespace AutoIssueSubmitter
                 return new System.Net.NetworkCredential(credentials.Username, credentials.Password);
             }
         }
+        public string[] Blacklist { get; set; }
+        [JsonIgnore]
+        public System.Text.RegularExpressions.Regex[] BlacklistRegex { get; set; }
         public Credentials credentials { get; set; }
     }
 }

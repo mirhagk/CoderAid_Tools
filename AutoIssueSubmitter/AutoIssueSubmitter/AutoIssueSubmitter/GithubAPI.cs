@@ -11,6 +11,16 @@ namespace AutoIssueSubmitter
 {
     public static class GithubAPI
     {
+        public class CandidateRepo
+        {
+            public string URL;
+            public DateTime LastUpdate;
+            public string Owner;
+            public override string ToString()
+            {
+                return String.Format("Repo:\nURL: {0}\nOwner: {1}\nLast Updated: {2}", URL, Owner, LastUpdate);
+            }
+        }
         public class Repository
         {
 
@@ -36,8 +46,9 @@ namespace AutoIssueSubmitter
                 }
             return query.ToString();
         }
-        private static void SearchQuery(string searchWords)
+        private static List<CandidateRepo> FindCandidateRepos(string searchWords, int page =1)
         {
+            List<CandidateRepo> candidates = new List<CandidateRepo>();
             //https://github.com/search?q=css+background-colour&type=Code&ref=searchresults
             var url = "https://github.com/search?" +
                 ObjectToQuery(new
@@ -45,20 +56,54 @@ namespace AutoIssueSubmitter
                     q = searchWords,
                     type = "Code",
                     o = "desc",
-                    s = "indexed"
+                    s = "indexed",
+                    p = page
+                    
                 });
             var data = GetDataFromURL(url);
             CQ cq = data;
-            var thing = cq[".code-list-item"].ToList();
-            Console.WriteLine(thing.First().InnerHTML);
-            //Console.WriteLine(cq[".code-list-item"].Skip(1).First().InnerHTML);
+            var titles = cq[".code-list-item .title"].ToList();
+            foreach (var title in titles)
+            {
+                CQ section = title.InnerHTML;
+                CandidateRepo candidate = new CandidateRepo()
+                {
+                    Owner = section["a"].Skip(0).First()["href"],
+                    URL = section["a"].Skip(1).First()["href"],
+                    LastUpdate = DateTime.Parse(section["time"].Attr("datetime"))
+                };
+                candidates.Add(candidate);
+                Console.WriteLine(candidate);
+            }
+            return candidates;
+        }
+        private static bool IsOnBlackList(CandidateRepo repo)
+        {
+            foreach (var black in Config.config.BlacklistRegex)
+            {
+                if (black.Match(repo.URL).Length == repo.URL.Length)
+                    return true;
+            }
+            return false;
+        }
+        private static List<CandidateRepo> FindAllReposSince(string searchWords, DateTime sinceDate)
+        {
+            bool done = false;
+            int page = 1;
+            List<CandidateRepo> candidates = new List<CandidateRepo>();
+            while (!done)
+            {
+                var searched = FindCandidateRepos(searchWords,page++);
+
+            }
+            return candidates;
         }
         public static void Test()
         {
             //Console.WriteLine(GetDataFromURL(GitAPIURL("/search/code", 
             //new {q= "mysql $_GET"}
             //)));
-            SearchQuery("mysql_query $_POST");
+            FindCandidateRepos("mysql_query $_GET");
             Console.WriteLine("Done");
         }
         private static T Request<T>(string apiPath, object parameters = null)
