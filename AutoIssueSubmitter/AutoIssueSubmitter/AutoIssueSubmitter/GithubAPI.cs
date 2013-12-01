@@ -127,12 +127,15 @@ namespace AutoIssueSubmitter
         {
             return GetObjectFromURL<T>(GitAPIURL(apiPath, parameters));
         }
+        private static CookieCollection cookies = null;
         private static string GetDataFromURL(string url)
         {
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
             request.AllowAutoRedirect = true;
             request.UserAgent = "HelperBot Issue Submitter -- contact mirhagk for problems";
             request.Credentials = Config.config.NetworkCredential;
+            if (cookies != null)
+                request.CookieContainer.Add(cookies);
             HttpWebResponse response;
             try
             {
