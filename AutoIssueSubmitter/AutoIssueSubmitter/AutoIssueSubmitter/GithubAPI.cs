@@ -73,7 +73,6 @@ namespace AutoIssueSubmitter
                     LastUpdate = DateTime.Parse(section["time"].Attr("datetime"))
                 };
                 candidates.Add(candidate);
-                Console.WriteLine(candidate);
             }
             return candidates;
         }
@@ -86,6 +85,7 @@ namespace AutoIssueSubmitter
             }
             return false;
         }
+        private const int SearchDelayMilli = 1000;
         private static List<CandidateRepo> FindAllReposSince(string searchWords, DateTime sinceDate)
         {
             bool done = false;
@@ -93,8 +93,21 @@ namespace AutoIssueSubmitter
             List<CandidateRepo> candidates = new List<CandidateRepo>();
             while (!done)
             {
-                var searched = FindCandidateRepos(searchWords,page++);
-
+                var searched = FindCandidateRepos(searchWords, page++);
+                foreach (var repo in searched)
+                {
+                    if (repo.LastUpdate < sinceDate)
+                    {
+                        done = true;
+                        break;
+                    }
+                    if (!IsOnBlackList(repo))
+                        candidates.Add(repo);
+                }
+                Console.WriteLine("Searching page {0}, earliest found {1}, total found {2}", page, candidates.Last().LastUpdate,candidates.Count);
+                if (done)
+                    break;
+                System.Threading.Thread.Sleep(SearchDelayMilli);
             }
             return candidates;
         }
@@ -103,7 +116,11 @@ namespace AutoIssueSubmitter
             //Console.WriteLine(GetDataFromURL(GitAPIURL("/search/code", 
             //new {q= "mysql $_GET"}
             //)));
-            FindCandidateRepos("mysql_query $_GET");
+            foreach (var repo in FindAllReposSince("mysql_query $_GET",DateTime.Today))
+            {
+                Console.WriteLine(repo);
+            }
+            //FindCandidateRepos("mysql_query $_GET");
             Console.WriteLine("Done");
         }
         private static T Request<T>(string apiPath, object parameters = null)
